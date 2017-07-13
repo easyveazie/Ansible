@@ -1,0 +1,6 @@
+[MSUInstallOrder]
+0=Windows6.1-KB2809215-x64.cab
+1=Windows6.1-KB2872035-x64.cab
+2=Windows6.1-KB2872047-x64.cab
+3=Windows6.1-KB3033929-x64.cab
+4=Windows6.1-KB3191566-x64.cab

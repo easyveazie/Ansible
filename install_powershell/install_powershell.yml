@@ -1,0 +1,97 @@
+---
+- name: Install Windows Management Framework
+  hosts: all
+  vars:
+    ps_vers_installing: 5.1
+    copy_dest_path: 'C:\Source'
+
+    # WMF file to OS version mapping. These will be moved to ansible linux file system during git push
+    osversion_to_installer_map:
+      "5.1":
+        "6.1":  # Server 2008 R2
+          kb: "3191566"
+          install_cab_order:
+            - 'Windows6.1-KB2809215-x64.cab'
+            - 'Windows6.1-KB2872035-x64.cab'
+            - 'Windows6.1-KB2872047-x64.cab'
+            - 'Windows6.1-KB3033929-x64.cab'
+            - 'Windows6.1-KB3191566-x64.cab'
+        "6.3": # Server 2012 R2
+          kb: "3191564"
+          install_cab_order:
+            - 'WindowsBlue-KB3191564-x64.cab'
+
+  tasks:
+
+  # We will check if the version is already installed
+  #   there are also some incompatable versions (i.e., can't install 5.1 over 3.0)
+  - name: Get current PowerShell Version
+    win_shell: '$Host.Version.ToString(2)'
+    register: get_psversion
+
+  # Output the PSModulePath to stdout for debugging. Some versions of WMF remove/reset this during install. 
+  - name: Get PowerShell Module Path
+    win_shell: '$env:PSModulePath'
+    register: get_psmodulepath
+
+  # Get the OS Version so we know which binary to install
+  - name: Get operating system version
+    win_shell: '[Environment]::OSVersion.Version.ToString(2)'
+    register: get_windowsversion
+
+  - name: Set dynamic playbook facts
+    set_fact:
+      win_version: '{{ get_windowsversion.stdout_lines[0] | float }}'      
+      ps_vers_installed: '{{ get_psversion.stdout_lines[0] | float }}'
+      ps_module_path: '{{ get_psmodulepath.stdout_lines[0] }}'      
+
+  - name: Set installer info facts
+    set_fact:
+      installer_source: 'installers/{{ ps_vers_installing }}/{{ win_version }}'
+      installer_dest: '{{ copy_dest_path }}\Posh_{{ ps_vers_installing }}'
+
+  - name: Write playbook output
+    debug:
+      verbosity: 0
+      msg:
+        - 'Host: {{ inventory_hostname }}'
+        - 'WindowsVersion: {{ win_version }}'
+        - 'PSVersion Installed: {{ ps_vers_installed }}'
+        - 'PSVersion Installing: {{ ps_vers_installing }}'
+        - 'PSModulePath: {{ ps_module_path }}'
+        - 'Src: {{ installer_source }}'
+        - 'Dest: {{ installer_dest }}'
+
+  # Only run these tasks if this version of PS (or higher) is not installed
+  - block:
+
+    - name: Creating install directory
+      win_file:
+        path: '{{ installer_dest }}'
+        state: directory
+
+    # Source and destination must both be a directory OR file path
+    - name: Copy WMF installer file to destination server
+      win_copy:
+        src: '{{ installer_source }}'
+        dest: '{{ installer_dest }}'
+
+    - name: Installing patch
+      win_command: 'dism.exe /online /add-package /PackagePath:{{ installer_dest }}\{{ win_version }}\{{ item }} /NoRestart /Quiet'
+      register: dism_cmd
+      ignore_errors: yes # Dism has an exit code of 3010 on success due to required reboot
+      failed_when: (dism_cmd.rc not in [ 0, 3010 ])
+      with_items: '{{ osversion_to_installer_map[ps_vers_installing | string][win_version | string].install_cab_order }}'    
+
+    # If the KB is not found, this command will throw and error and mark job as failed
+    - name: Check if WMF installed
+      win_shell: 'Get-Hotfix "KB{{ osversion_to_installer_map[ps_vers_installing | string][win_version | string].kb }}"'
+      register: final_validation
+      ignore_errors: yes
+    
+    - name: "Check if PowerShell install was successful"
+      assert:       
+        that: 'final_validation.rc == 0'
+        msg: "KB{{ osversion_to_installer_map[ps_vers_installing | string][win_version | string].kb }} was installed successfully"
+    
+    when: 'ps_vers_installing|float > ps_vers_installed|float'

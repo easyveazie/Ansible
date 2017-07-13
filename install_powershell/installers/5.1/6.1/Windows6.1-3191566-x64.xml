@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+    <servicing>
+        <package action="install">
+            <assemblyIdentity name="Package_for_KB2809215" version="6.1.1.1" language="neutral" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"/>
+            <source location="%configsetroot%\Windows6.1-KB2809215-x64.cab" />
+        </package>
+        <package action="install">
+            <assemblyIdentity name="Package_for_KB2872035" version="6.1.1.0" language="neutral" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"/>
+            <source location="%configsetroot%\Windows6.1-KB2872035-x64.cab" />
+        </package>
+        <package action="install">
+            <assemblyIdentity name="Package_for_KB2872047" version="6.1.1.0" language="neutral" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"/>
+            <source location="%configsetroot%\Windows6.1-KB2872047-x64.cab" />
+        </package>
+        <package action="install">
+            <assemblyIdentity name="Package_for_KB3033929" version="6.1.1.1" language="neutral" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"/>
+            <source location="%configsetroot%\Windows6.1-KB3033929-x64.cab" />
+        </package>
+        <package action="install">
+            <assemblyIdentity buildType="release" language="neutral" name="Microsoft-Windows-WinMan-WinIP-Package-TopLevel" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" version="7.3.7601.16384"/>
+            <source location="%configsetroot%\Windows6.1-KB3191566-x64.cab" />
+        </package>
+    </servicing>
+</unattend>
